@@ -46,30 +46,55 @@ class MessageRepository:
         """
         Get context messages around a target message.
         If target message is a reply, starts from the original message.
+        Otherwise gets messages before the target.
         """
+        import logging
+        logger = logging.getLogger(__name__)
+
         # First, get the target message
         target = await self.get_message_by_id(chat_id, target_message_id)
         if not target:
+            logger.warning(f"Target message {target_message_id} not found in DB")
             return []
 
-        # If it's a reply, find the root message
-        root_message_id = target_message_id
+        # If it's a reply, find the root message and get messages from there
         if target.reply_to_message_id:
             root_message_id = await self._find_root_message(chat_id, target.reply_to_message_id)
+            logger.info(f"Message is a reply, found root: {root_message_id}")
 
-        # Get messages starting from root
-        result = await self.session.execute(
-            select(Message)
-            .where(
-                and_(
-                    Message.chat_id == chat_id,
-                    Message.message_id >= root_message_id,
+            # Get messages from root to target + some after
+            result = await self.session.execute(
+                select(Message)
+                .where(
+                    and_(
+                        Message.chat_id == chat_id,
+                        Message.message_id >= root_message_id,
+                    )
                 )
+                .order_by(Message.message_id.asc())
+                .limit(count)
             )
-            .order_by(Message.message_id.asc())
-            .limit(count)
-        )
-        return list(result.scalars().all())
+        else:
+            # Get messages BEFORE and including the target
+            logger.info(f"Getting {count} messages before message {target_message_id}")
+            result = await self.session.execute(
+                select(Message)
+                .where(
+                    and_(
+                        Message.chat_id == chat_id,
+                        Message.message_id <= target_message_id,
+                    )
+                )
+                .order_by(Message.message_id.desc())
+                .limit(count)
+            )
+
+        messages = list(result.scalars().all())
+        # Sort by message_id ascending for proper order
+        messages.sort(key=lambda m: m.message_id)
+
+        logger.info(f"Retrieved {len(messages)} context messages from DB")
+        return messages
 
     async def _find_root_message(self, chat_id: int, message_id: int) -> int:
         """Recursively find the root message of a reply chain."""

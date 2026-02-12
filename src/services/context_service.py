@@ -43,14 +43,18 @@ class ContextService:
             return
 
         logger.info(f"Found {len(context_messages)} context messages")
+        for msg in context_messages:
+            logger.debug(f"  #{msg.message_id}: @{msg.username}: {msg.text[:30] if msg.text else '[empty]'}...")
 
         # Filter with AI
         relevant_ids = await filter_relevant_messages(target_message, context_messages)
+        logger.info(f"AI returned {len(relevant_ids)} relevant IDs: {relevant_ids}")
 
         # Get only relevant messages
         relevant_messages = [
             msg for msg in context_messages if msg.message_id in relevant_ids
         ]
+        logger.info(f"Matched {len(relevant_messages)} messages from context")
 
         if not relevant_messages:
             logger.warning("No relevant messages after filtering")
