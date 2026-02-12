@@ -65,16 +65,13 @@ class ContextService:
 
     async def _publish_to_channel(self, messages: list) -> None:
         """Publish filtered messages to target channel."""
-        # Build message text
-        header = "📌 *Контекст обсуждения:*\n\n"
-
         formatted_messages = []
         for msg in messages:
             username = f"@{msg.username}" if msg.username else "Unknown"
             text = msg.text or "[без текста]"
-            formatted_messages.append(f"*{username}:*\n{text}")
+            formatted_messages.append(f"*{username}:* {text}")
 
-        full_text = header + "\n\n---\n\n".join(formatted_messages)
+        full_text = "\n".join(formatted_messages)
 
         # Telegram message limit is 4096 characters
         if len(full_text) > 4096:
