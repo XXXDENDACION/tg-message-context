@@ -16,16 +16,19 @@ Target message (the one that received a 👍 reaction):
 ID: {target_id}
 Text: "{target_text}"
 
-Here are the surrounding messages from the chat:
+Here are the surrounding messages from the chat (in chronological order):
 {messages}
 
 Your task:
 1. Identify which messages are contextually related to the target message
-2. Include messages that are part of the same discussion/topic
-3. Exclude messages that are clearly about different topics happening in parallel
+2. Include messages that are part of the same discussion/topic/conversation flow
+3. When in doubt, INCLUDE the message rather than exclude it
+4. Only exclude messages that are CLEARLY about completely different unrelated topics
 
-Return a JSON array of message IDs that are relevant to the target message's context.
-Include the target message ID itself.
+IMPORTANT: If all messages seem to be part of one conversation, include ALL of them.
+
+Return a JSON object with message IDs that are relevant to the target message's context.
+ALWAYS include the target message ID itself.
 
 Example response format:
 {{"relevant_ids": [123, 124, 125, 128, 130]}}
@@ -54,6 +57,9 @@ async def filter_relevant_messages(
         messages=messages_text,
     )
 
+    logger.info(f"Sending {len(context_messages)} messages to OpenAI for filtering")
+    logger.debug(f"Messages text:\n{messages_text}")
+
     try:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -69,6 +75,8 @@ async def filter_relevant_messages(
         )
 
         content = response.choices[0].message.content
+        logger.info(f"OpenAI raw response: {content}")
+
         if not content:
             logger.error("Empty response from OpenAI")
             return [target_message.message_id]
