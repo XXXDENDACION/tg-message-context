@@ -9,7 +9,7 @@ from src.db.models import Message
 logger = logging.getLogger(__name__)
 
 genai.configure(api_key=settings.gemini_api_key)
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-2.0-flash")
 
 FILTER_PROMPT = """You are analyzing a chat conversation to find messages relevant to a specific target message.
 
