@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, DateTime, ForeignKey, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import BigInteger, DateTime, String, Text
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -19,12 +19,3 @@ class Message(Base):
     text: Mapped[str | None] = mapped_column(Text, nullable=True)
     reply_to_message_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-
-    # Self-referential relationship for reply chains
-    replies: Mapped[list["Message"]] = relationship(
-        "Message",
-        foreign_keys="Message.reply_to_message_id",
-        primaryjoin="Message.message_id == foreign(Message.reply_to_message_id)",
-        backref="replied_to",
-        lazy="selectin",
-    )
