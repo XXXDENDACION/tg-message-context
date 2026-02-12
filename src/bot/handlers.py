@@ -44,7 +44,7 @@ async def handle_message(message: Message) -> None:
         )
 
         await repo.save_message(dto)
-        logger.debug(f"Saved message {message.message_id} from chat {message.chat.id}")
+        logger.info(f"New message saved: #{message.message_id} from @{dto.username or 'unknown'}: {dto.text[:50]}{'...' if len(dto.text or '') > 50 else ''}")
 
 
 @router.message_reaction()
