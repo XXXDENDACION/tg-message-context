@@ -3,7 +3,7 @@ import logging
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.ai.groq_client import filter_relevant_messages
+from src.ai.gemini_client import filter_relevant_messages
 from src.config import settings
 from src.db.repository import MessageRepository
 

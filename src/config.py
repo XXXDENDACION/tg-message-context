@@ -13,8 +13,8 @@ class Settings(BaseSettings):
     source_chat_id: int
     target_channel_id: int
 
-    # Groq
-    groq_api_key: str
+    # Google Gemini
+    gemini_api_key: str
 
     # Database
     database_url: str = "sqlite+aiosqlite:///data/bot.db"
