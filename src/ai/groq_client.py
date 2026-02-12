@@ -1,14 +1,14 @@
 import json
 import logging
 
-from openai import AsyncOpenAI
+from groq import AsyncGroq
 
 from src.config import settings
 from src.db.models import Message
 
 logger = logging.getLogger(__name__)
 
-client = AsyncOpenAI(api_key=settings.openai_api_key)
+client = AsyncGroq(api_key=settings.groq_api_key)
 
 FILTER_PROMPT = """You are analyzing a chat conversation to find messages relevant to a specific target message.
 
@@ -41,7 +41,7 @@ async def filter_relevant_messages(
     context_messages: list[Message],
 ) -> list[int]:
     """
-    Use OpenAI to filter messages that are relevant to the target message.
+    Use Groq to filter messages that are relevant to the target message.
     Returns list of relevant message IDs.
     """
     # Format messages for the prompt
@@ -57,16 +57,16 @@ async def filter_relevant_messages(
         messages=messages_text,
     )
 
-    logger.info(f"Sending {len(context_messages)} messages to OpenAI for filtering")
+    logger.info(f"Sending {len(context_messages)} messages to Groq for filtering")
     logger.debug(f"Messages text:\n{messages_text}")
 
     try:
         response = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.3-70b-versatile",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful assistant that analyzes chat conversations.",
+                    "content": "You are a helpful assistant that analyzes chat conversations. Always respond with valid JSON.",
                 },
                 {"role": "user", "content": prompt},
             ],
@@ -75,19 +75,19 @@ async def filter_relevant_messages(
         )
 
         content = response.choices[0].message.content
-        logger.info(f"OpenAI raw response: {content}")
+        logger.info(f"Groq raw response: {content}")
 
         if not content:
-            logger.error("Empty response from OpenAI")
+            logger.error("Empty response from Groq")
             return [target_message.message_id]
 
         result = json.loads(content)
         relevant_ids = result.get("relevant_ids", [target_message.message_id])
 
-        logger.info(f"OpenAI filtered {len(relevant_ids)} relevant messages from {len(context_messages)}")
+        logger.info(f"Groq filtered {len(relevant_ids)} relevant messages from {len(context_messages)}")
         return relevant_ids
 
     except Exception as e:
-        logger.error(f"OpenAI API error: {e}")
+        logger.error(f"Groq API error: {e}")
         # Fallback: return just the target message
         return [target_message.message_id]
