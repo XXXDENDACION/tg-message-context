@@ -11,35 +11,31 @@ logger = logging.getLogger(__name__)
 genai.configure(api_key=settings.gemini_api_key)
 model = genai.GenerativeModel("gemini-2.0-flash")
 
-FILTER_PROMPT = """You filter chat messages. Return ONLY IDs of messages about the EXACT SAME topic as the target.
+FILTER_PROMPT = """Analyze this chat to find ONLY messages directly related to the target message.
 
-TARGET (ID: {target_id}): "{target_text}"
+TARGET MESSAGE (received 👍 reaction):
+ID: {target_id}
+Text: "{target_text}"
 
-MESSAGES:
+CHAT MESSAGES:
 {messages}
 
-EXAMPLE 1:
-Target: "выходи к ване"
-Messages:
-- ID 1: "погода сегодня хорошая" → EXCLUDE (different topic)
-- ID 2: "ты где?" → INCLUDE (same conversation about meeting)
-- ID 3: "я на месте" → INCLUDE (same topic - location/meeting)
-- ID 4: "выходи к ване" → INCLUDE (target)
-Result: {{"relevant_ids": [2, 3, 4]}}
+STRICT RULES:
+1. Include ONLY messages that DIRECTLY discuss the same specific topic as the target
+2. A message is related if it:
+   - Is a direct reply to the target or messages in the same thread
+   - Mentions the same specific subject/person/action as the target
+   - Is part of the immediate back-and-forth leading to the target
+3. EXCLUDE messages that:
+   - Are about different topics even if sent by same person
+   - Are general chatter not related to the target's specific subject
+   - Just happen to be nearby in time but discuss something else
 
-EXAMPLE 2:
-Target: "баг пофиксил"
-Messages:
-- ID 10: "что на обед?" → EXCLUDE
-- ID 11: "там ошибка в логине" → INCLUDE (about the bug)
-- ID 12: "посмотри пожалуйста" → INCLUDE (about the bug)
-- ID 13: "баг пофиксил" → INCLUDE (target)
-Result: {{"relevant_ids": [11, 12, 13]}}
+BE STRICT. It's better to return fewer highly relevant messages than many loosely related ones.
+Typical result: 2-6 messages, not all messages.
 
-Return ONLY messages that a human would clearly group together as ONE conversation thread.
-If unsure - EXCLUDE. Return 2-5 messages typically, rarely more.
-
-JSON only: {{"relevant_ids": [...]}}"""
+Return JSON with relevant message IDs (always include target ID {target_id}):
+{{"relevant_ids": [123, 125, 130]}}"""
 
 
 async def filter_relevant_messages(
