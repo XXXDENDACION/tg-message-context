@@ -1,15 +1,14 @@
 import json
 import logging
 
-import google.generativeai as genai
+import httpx
 
 from src.config import settings
 from src.db.models import Message
 
 logger = logging.getLogger(__name__)
 
-genai.configure(api_key=settings.gemini_api_key)
-model = genai.GenerativeModel("gemini-2.0-flash")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 FILTER_PROMPT = """Analyze this chat to find ONLY messages directly related to the target message.
 
@@ -43,7 +42,7 @@ async def filter_relevant_messages(
     context_messages: list[Message],
 ) -> list[int]:
     """
-    Use Gemini to filter messages that are relevant to the target message.
+    Use OpenRouter (DeepSeek) to filter messages that are relevant to the target message.
     Returns list of relevant message IDs.
     """
     messages_text = "\n".join(
@@ -58,30 +57,47 @@ async def filter_relevant_messages(
         messages=messages_text,
     )
 
-    logger.info(f"Sending {len(context_messages)} messages to Gemini for filtering")
+    logger.info(f"Sending {len(context_messages)} messages to OpenRouter for filtering")
 
     try:
-        response = await model.generate_content_async(
-            prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=0.1,
-                response_mime_type="application/json",
-            ),
-        )
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                OPENROUTER_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.openrouter_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "deepseek/deepseek-chat",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You analyze chat conversations and return JSON. Be strict in filtering.",
+                        },
+                        {"role": "user", "content": prompt},
+                    ],
+                    "temperature": 0.1,
+                    "response_format": {"type": "json_object"},
+                },
+                timeout=30.0,
+            )
 
-        content = response.text
-        logger.info(f"Gemini raw response: {content}")
+            response.raise_for_status()
+            data = response.json()
+
+        content = data["choices"][0]["message"]["content"]
+        logger.info(f"OpenRouter raw response: {content}")
 
         if not content:
-            logger.error("Empty response from Gemini")
+            logger.error("Empty response from OpenRouter")
             return [target_message.message_id]
 
         result = json.loads(content)
         relevant_ids = result.get("relevant_ids", [target_message.message_id])
 
-        logger.info(f"Gemini filtered {len(relevant_ids)} relevant messages from {len(context_messages)}")
+        logger.info(f"OpenRouter filtered {len(relevant_ids)} relevant messages from {len(context_messages)}")
         return relevant_ids
 
     except Exception as e:
-        logger.error(f"Gemini API error: {e}")
+        logger.error(f"OpenRouter API error: {e}")
         return [target_message.message_id]

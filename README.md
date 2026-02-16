@@ -7,7 +7,7 @@
 - Сохранение всех сообщений из отслеживаемого чата в локальную базу данных
 - Отслеживание реакций 👍 на сообщения
 - Извлечение контекста (10-20 сообщений) с учётом цепочек ответов
-- AI-фильтрация релевантных сообщений (Google Gemini 1.5 Flash)
+- AI-фильтрация релевантных сообщений (DeepSeek через OpenRouter)
 - Публикация отфильтрованного контекста в целевой канал
 
 ## Технологии
@@ -16,14 +16,14 @@
 - **aiogram 3.x** — Telegram Bot API
 - **SQLAlchemy 2.0** — async ORM
 - **SQLite** — хранение сообщений
-- **Google Gemini API** — фильтрация контекста (бесплатный tier)
+- **OpenRouter API** — доступ к DeepSeek и другим моделям
 - **Docker** — деплой
 
 ## Требования
 
 - Docker и Docker Compose
 - Telegram Bot Token (от [@BotFather](https://t.me/BotFather))
-- Google Gemini API Key (бесплатно)
+- OpenRouter API Key
 
 ## Установка
 
@@ -50,8 +50,8 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 SOURCE_CHAT_ID=-1001234567890
 TARGET_CHANNEL_ID=-1001234567891
 
-# Google Gemini Configuration (free tier: 60 req/min)
-GEMINI_API_KEY=your-gemini-api-key
+# OpenRouter Configuration
+OPENROUTER_API_KEY=your-openrouter-api-key
 
 # Context Settings
 CONTEXT_MESSAGES_COUNT=20
@@ -64,7 +64,7 @@ CONTEXT_MESSAGES_COUNT=20
 | `TELEGRAM_BOT_TOKEN` | Создать бота через [@BotFather](https://t.me/BotFather) |
 | `SOURCE_CHAT_ID` | Переслать сообщение из чата в [@userinfobot](https://t.me/userinfobot) |
 | `TARGET_CHANNEL_ID` | Переслать сообщение из канала в [@userinfobot](https://t.me/userinfobot) |
-| `GEMINI_API_KEY` | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (бесплатно) |
+| `OPENROUTER_API_KEY` | [openrouter.ai/keys](https://openrouter.ai/keys) |
 
 ### 4. Настроить права бота
 
@@ -118,7 +118,7 @@ python -m src.main
 │   │   ├── models.py        # Message model
 │   │   └── repository.py    # CRUD operations
 │   ├── ai/
-│   │   └── gemini_client.py # Google Gemini integration
+│   │   └── openrouter_client.py # OpenRouter/DeepSeek integration
 │   └── services/
 │       └── context_service.py # Business logic
 ├── tests/
@@ -137,18 +137,18 @@ python -m src.main
    └── Если сообщение — ответ на старое → переход к началу треда
    └── Загрузка 20 сообщений начиная с этой точки
 
-3. Gemini 1.5 Flash анализирует сообщения:
+3. DeepSeek (через OpenRouter) анализирует сообщения:
    └── Фильтрует только релевантные к теме
    └── Исключает параллельные обсуждения
 
 4. Отфильтрованные сообщения публикуются в target-канал
 ```
 
-## Почему Google Gemini?
+## Почему OpenRouter + DeepSeek?
 
-- **Щедрый бесплатный tier** — 60 запросов в минуту
-- **Быстрый** — Flash модель оптимизирована для скорости
-- **Качественный** — хорошо понимает контекст разговоров
+- **Единый API** — доступ к множеству моделей через один интерфейс
+- **DeepSeek** — отличное качество при низкой цене
+- **Гибкость** — легко переключиться на другую модель
 
 ## Лицензия
 
