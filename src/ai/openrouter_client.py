@@ -68,7 +68,7 @@ async def filter_relevant_messages(
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "aurora-alpha",
+                    "model": "openrouter/aurora-alpha",
                     "messages": [
                         {
                             "role": "system",
