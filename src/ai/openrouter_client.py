@@ -68,7 +68,7 @@ async def filter_relevant_messages(
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "deepseek/deepseek-chat",
+                    "model": "deepseek/deepseek-chat:free",
                     "messages": [
                         {
                             "role": "system",
